@@ -6,137 +6,140 @@
 
 // constructor
 IsingSystem::IsingSystem() {
-	cout << "creating system, gridSize " << gridSize << endl;
+    cout << "creating system, gridSize " << gridSize << endl;
 
-	inverseTemperatureBeta = 1 / 4.0;
-	slowNotFast = 1;
-	isActive = 0;
+    inverseTemperatureBeta = 1 / 4.0;
+    isActive = 0;
+    // Allocate memory for the grid, remember to free the memory in destructor
+    //   the point here is that each row of the grid is an array
+    //   the grid itself is an array of pointers, one for each row
+    // Here we allocate the array of pointers
+    grid = new int *[gridSize];
+    // Now allocate the individual rows
+    for (int i = 0; i < gridSize; i++) {
+        grid[i] = new int[gridSize];
+    }
 
-	// Allocate memory for the grid, remember to free the memory in destructor
-	//   the point here is that each row of the grid is an array
-	//   the grid itself is an array of pointers, one for each row
-	// Here we allocate the array of pointers
-	grid = new int*[gridSize];
-	// Now allocate the individual rows
-	for (int i = 0; i<gridSize; i++) {
-		grid[i] = new int[gridSize];
-	}
-
-	// this sets the temperature and initialises the spins grid
-	Reset();
+    // this sets the temperature and initialises the spins grid
+    Reset();
 }
-
+// resets object
 void IsingSystem::Reset() {
 
-	double initialTemp = 4.0;
+    double initialTemp = 4.0;
 
-	setTemperature(initialTemp);
+    setTemperature(initialTemp);
 
-	// set the grid to -1
-	for (int i = 0; i<gridSize; i++) {
-		for (int j = 0; j<gridSize; j++) {
-			// position is (i,j)
-			int pos[2] = { i,j };
-			// set this spin to state -1
-			setGrid(pos, -1);
-		}
-	}
+    // set the grid to -1
+    for (int i = 0; i < gridSize; i++) {
+        for (int j = 0; j < gridSize; j++) {
+            // position is (i,j)
+            int pos[2] = {i, j};
+            // set this spin to state -1
+            setGrid(pos, -1);
+        }
+    }
 }
-
-
 // destructor
 IsingSystem::~IsingSystem() {
-	// Close the file (if open)
-	if (logfile.is_open())
-		logfile.close();
+    // Close the file (if open)
+    if (logfile.is_open())
+        logfile.close();
 
-	// Delete the grid
-	// First we delete the individual rows
-	for (int i = 0; i<gridSize; i++)
-		delete[] grid[i];
-	// Finally delete the array of pointers
-	delete[] grid;
+    // Delete the grid
+    // First we delete the individual rows
+    for (int i = 0; i < gridSize; i++)
+        delete[] grid[i];
+    // Finally delete the array of pointers
+    delete[] grid;
 }
-
-
-
+// returns Magnetisation of grid
+float IsingSystem::getMagnetisation() {
+    float M = 0;
+    for (int i = 0; i < gridSize; i++) {
+        for (int j = 0; j < gridSize; j++) {
+            M += grid[i][j];
+        }
+    }
+    return (M/(gridSize*gridSize));
+}
 // attempt N spin flips, where N is the number of spins
 void IsingSystem::MCsweep() {
-	for (int i = 0; i<gridSize*gridSize; i++)
-		attemptSpinFlip();
+    for (int i = 0; i < gridSize * gridSize; i++)
+        attemptSpinFlip();
 }
-
 // here we attempt to flip a spin and accept/reject with Metropolis rule
 void IsingSystem::attemptSpinFlip() {
-	int pos[2];
+    int pos[2];
 
-	// random site
-	pos[0] = rgen.randomInt(gridSize);
-	pos[1] = rgen.randomInt(gridSize);
+    // random site
+    pos[0] = rgen.randomInt(gridSize);
+    pos[1] = rgen.randomInt(gridSize);
 
-	double hloc = computeLocalField(pos);
-	
-	double dE = 2.0 * hloc * readGrid(pos);
-	if (dE<0)
-		flipSpin(pos);
-	else if (rgen.random01() < exp(-dE))
-		flipSpin(pos);
+    double hloc = computeLocalField(pos);
+
+    double dE = 2.0 * hloc * readGrid(pos);
+    if (dE < 0)
+        flipSpin(pos);
+    else if (rgen.random01() < exp(-dE))
+        flipSpin(pos);
 
 }
 
 // NOTE: this returns the local field *divided by the temperature* (dimensionless quantity)
 double IsingSystem::computeLocalField(int pos[]) {
-	double result = 0.0;
-	for (int i = 0; i<4; i++) {
-		int nborPos[2];
-		setPosNeighbour(nborPos, pos, i);
-		result += readGrid(nborPos);
-	}
-	result *= inverseTemperatureBeta;
-	return result;
+    double result = 0.0;
+    for (int i = 0; i < 4; i++) {
+        int nborPos[2];
+        setPosNeighbour(nborPos, pos, i);
+        result += readGrid(nborPos);
+    }
+    result *= inverseTemperatureBeta;
+    return result;
 }
 
 // set the value of a grid cell for a particular position
 void IsingSystem::setGrid(int pos[], int val) {
-	grid[pos[0]][pos[1]] = val;
+    grid[pos[0]][pos[1]] = val;
 }
 
 // read the grid cell for a given position
 int IsingSystem::readGrid(int pos[]) {
-	return grid[pos[0]][pos[1]];
+    return grid[pos[0]][pos[1]];
 }
 
 // read the grid cell for a given position
 void IsingSystem::flipSpin(int pos[]) {
-	grid[pos[0]][pos[1]] = -grid[pos[0]][pos[1]];
+    grid[pos[0]][pos[1]] = -grid[pos[0]][pos[1]];
 }
 
 
 // send back the position of a neighbour of a given grid cell
 // NOTE: we take care of periodic boundary conditions, also positions are integers now not doubles
 void IsingSystem::setPosNeighbour(int setpos[], int pos[], int val) {
-	switch (val) {
-	case 0:
-		setpos[0] = (pos[0] + 1) % gridSize;
-		setpos[1] = pos[1];
-		break;
-	case 1:
-		setpos[0] = (pos[0] - 1 + gridSize) % gridSize;
-		setpos[1] = pos[1];
-		break;
-	case 2:
-		setpos[0] = pos[0];
-		setpos[1] = (pos[1] + 1) % gridSize;
-		break;
-	case 3:
-		setpos[0] = pos[0];
-		setpos[1] = (pos[1] - 1 + gridSize) % gridSize;
-		break;
-	}
+    switch (val) {
+        case 0:
+            setpos[0] = (pos[0] + 1) % gridSize;
+            setpos[1] = pos[1];
+            break;
+        case 1:
+            setpos[0] = (pos[0] - 1 + gridSize) % gridSize;
+            setpos[1] = pos[1];
+            break;
+        case 2:
+            setpos[0] = pos[0];
+            setpos[1] = (pos[1] + 1) % gridSize;
+            break;
+        case 3:
+            setpos[0] = pos[0];
+            setpos[1] = (pos[1] - 1 + gridSize) % gridSize;
+            break;
+    }
 }
 
 // this is the update function which at the moment just does one mc sweep
 void IsingSystem::Update() {
-	MCsweep();
+    MCsweep();
+    std::cout << "Magnetisation: " << getMagnetisation() << std::endl;
 }
 
