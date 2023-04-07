@@ -23,6 +23,7 @@ IsingSystem::IsingSystem() {
     // this sets the temperature and initialises the spins grid
     Reset();
 }
+
 // resets object
 void IsingSystem::Reset() {
 
@@ -40,6 +41,7 @@ void IsingSystem::Reset() {
         }
     }
 }
+
 // destructor
 IsingSystem::~IsingSystem() {
     // Close the file (if open)
@@ -53,6 +55,7 @@ IsingSystem::~IsingSystem() {
     // Finally delete the array of pointers
     delete[] grid;
 }
+
 // returns Magnetisation of grid
 float IsingSystem::getMagnetisation() {
     float M = 0;
@@ -61,13 +64,33 @@ float IsingSystem::getMagnetisation() {
             M += grid[i][j];
         }
     }
-    return (M/(gridSize*gridSize));
+    return (M / (gridSize * gridSize));
 }
+
+// returns Energy of grid
+float IsingSystem::getEnergy() {
+    float E = 0;
+    int neighbour[2], current[2];
+
+    for (int i = 0; i < gridSize; i++) {
+        for (int j = 0; j < gridSize; j++) {
+            current[0] = i;
+            current[1] = j;
+            for (int k = 0; k < 4; k++){
+                setPosNeighbour(neighbour,current,k);
+                E += grid[current[0]][current[1]] * grid[neighbour[0]][neighbour[1]];
+            }
+        }
+    }
+    return (-E);
+}
+
 // attempt N spin flips, where N is the number of spins
 void IsingSystem::MCsweep() {
     for (int i = 0; i < gridSize * gridSize; i++)
         attemptSpinFlip();
 }
+
 // here we attempt to flip a spin and accept/reject with Metropolis rule
 void IsingSystem::attemptSpinFlip() {
     int pos[2];
@@ -140,6 +163,7 @@ void IsingSystem::setPosNeighbour(int setpos[], int pos[], int val) {
 // this is the update function which at the moment just does one mc sweep
 void IsingSystem::Update() {
     MCsweep();
-    std::cout << "Magnetisation: " << getMagnetisation() << std::endl;
+    Magnetisation.push_back(getMagnetisation());
+    Energy.push_back(getEnergy());
 }
 

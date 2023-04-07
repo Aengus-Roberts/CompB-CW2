@@ -46,10 +46,9 @@ public:
 
     void MCsweep();
 
-    // increase or decrease the temperature (arbitrary increments)
-    void Hotter() { inverseTemperatureBeta -= 0.05; }
+    vector<float> Energy;
 
-    void Colder() { inverseTemperatureBeta += 0.05; }
+    vector<float> Magnetisation;
 
     // this variable is 1 if the system is running, 0 for paused
     int isActive;
@@ -69,18 +68,16 @@ public:
 
     float getMagnetisation();
 
+    float getEnergy();
 
     // reset temperature to default value and re-initialise the grid
     void Reset();
-
-    // "user interface" for the isActive variable
-    int isRunning() { return isActive; }
 
 
     // set setpos to the position of a neighbour of pos
     // the neighbour to use is determined by val (=0,1,2,3)
     // beware: behavior is not defined for val>=4 or val<0
-    void setPosNeighbour(int setpos[], int pos[], int val);
+    static void setPosNeighbour(int setpos[], int pos[], int val);
 
     // update the system: makes a Monte Carlo sweep
     void Update();
