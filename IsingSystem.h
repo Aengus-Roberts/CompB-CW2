@@ -70,6 +70,8 @@ public:
 
     float getEnergy();
 
+    std::vector<float> getValues();
+
     // reset temperature to default value and re-initialise the grid
     void Reset();
 

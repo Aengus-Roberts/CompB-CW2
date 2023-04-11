@@ -76,14 +76,35 @@ float IsingSystem::getEnergy() {
         for (int j = 0; j < gridSize; j++) {
             current[0] = i;
             current[1] = j;
-            for (int k = 0; k < 4; k++){
-                setPosNeighbour(neighbour,current,k);
+            for (int k = 0; k < 4; k++) {
+                setPosNeighbour(neighbour, current, k);
                 E += grid[current[0]][current[1]] * grid[neighbour[0]][neighbour[1]];
             }
         }
     }
     return (-E);
 }
+
+std::vector<float> IsingSystem::getValues() {
+    float E = 0, M = 0;
+    std::vector<float> values;
+    int neighbour[2], current[2];
+    for (int i = 0; i < gridSize; i++) {
+        for (int j = 0; j < gridSize; j++) {
+            current[0] = i;
+            current[1] = j;
+            M += grid[i][j];
+            for (int k = 0; k < 4; k++) {
+                setPosNeighbour(neighbour, current, k);
+                E += grid[current[0]][current[1]] * grid[neighbour[0]][neighbour[1]];
+            }
+        }
+    }
+    values.push_back(M);
+    values.push_back(E);
+    return values;
+}
+
 
 // attempt N spin flips, where N is the number of spins
 void IsingSystem::MCsweep() {
@@ -163,7 +184,9 @@ void IsingSystem::setPosNeighbour(int setpos[], int pos[], int val) {
 // this is the update function which at the moment just does one mc sweep
 void IsingSystem::Update() {
     MCsweep();
-    Magnetisation.push_back(getMagnetisation());
-    Energy.push_back(getEnergy());
+    vector<float> values;
+    values = getValues();
+    Magnetisation.push_back(values[0]);
+    Energy.push_back(values[1]);
 }
 
